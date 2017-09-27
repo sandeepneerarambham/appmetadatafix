@@ -19,6 +19,16 @@ function processBatch(page) {
       page: page
     })
     .then(res => {
+      var string = JSON.stringify(res.headers);
+      var objectValue = JSON.parse(string);
+      var remaining = objectValue['x-ratelimit-remaining'];
+            
+      if (remaining < 2) {
+        console.log("in delay", remaining);
+         var sleepTime = objectValue['x-ratelimit-reset'];
+         var ts = Math.round((new Date()).getTime() / 1000);
+         sleep(1000); // sleep for 1 second
+      }
       page++;
 
       const users = _.filter(res.body.users, (user) => {
