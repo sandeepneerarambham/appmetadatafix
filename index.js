@@ -1,6 +1,7 @@
 const request = require('superagent-bluebird-promise');
 const _ = require('lodash');
 const Promise = require('bluebird');
+const sleep = require('system-sleep');
 require('dotenv').config();
 
 let accessToken;
@@ -34,8 +35,19 @@ function processBatch(page) {
             'app_metadata': user.app_metadata
           }).then(res => {
             console.log(`[${++usersUpdated}] Synced app_metadata for ${user.user_id}`)
+            var string = JSON.stringify(res.headers);
+            var objectValue = JSON.parse(string);
+            var remaining = objectValue['x-ratelimit-remaining'];
+            
+            if (remaining < 2) {
+              console.log("in delay", remaining);
+              var sleepTime = objectValue['x-ratelimit-reset'];
+              var ts = Math.round((new Date()).getTime() / 1000);
+              sleep(1000); // sleep for 1 second
+            }
             return res;
           });
+         
       }).then((results) => {
         if (users_per_page * page < res.body.total) {
           return processBatch(page);
@@ -44,7 +56,7 @@ function processBatch(page) {
         }
       });
     });
-}
+  }
 
 request
   .post(`${process.env.AUTH0_TENANT}/oauth/token`)
